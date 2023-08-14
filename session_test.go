@@ -1,7 +1,7 @@
 //go:build all || cassandra
 // +build all cassandra
 
-package gocql
+package scql
 
 import (
 	"context"

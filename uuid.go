@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package gocql
+package scql
 
 // The uuid package can be used to generate and parse universally unique
 // identifiers, a standardized format in the form of a 128 bit number.

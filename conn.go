@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package gocql
+package scql
 
 import (
 	"bufio"
@@ -1679,7 +1679,7 @@ func (c *Conn) awaitSchemaAgreement(ctx context.Context) (err error) {
 
 		versions = make(map[string]struct{})
 
-		rows, err := iter.SliceMap()
+		rows, err := iter.GetRowsMap()
 		if err != nil {
 			goto cont
 		}

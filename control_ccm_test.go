@@ -1,7 +1,7 @@
 //go:build ccm
 // +build ccm
 
-package gocql
+package scql
 
 import (
 	"fmt"

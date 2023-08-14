@@ -1,7 +1,7 @@
 //go:build (ccm && ignore) || ignore
 // +build ccm,ignore ignore
 
-package gocql
+package scql
 
 import (
 	"log"

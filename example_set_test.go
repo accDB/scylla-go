@@ -1,4 +1,4 @@
-package gocql_test
+package scql_test
 
 import (
 	"fmt"

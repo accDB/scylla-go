@@ -273,7 +273,7 @@
 // # Dynamic list of columns
 //
 // There are certain situations when you don't know the list of columns in advance, mainly when the query is supplied
-// by the user. Iter.Columns, Iter.RowData, Iter.MapScan and Iter.SliceMap can be used to handle this case.
+// by the user. Iter.Columns, Iter.RowData, Iter.GetRowMap and Iter.GetRowsMap can be used to handle this case.
 //
 // See Example_dynamicColumns.
 //
@@ -357,4 +357,4 @@
 // system_traces.events tables. NewTraceWriter returns an implementation of Tracer that writes the events to a writer.
 // Gathering trace information might be essential for debugging and optimizing queries, but writing traces has overhead,
 // so this feature should not be used on production systems with very high load unless you know what you are doing.
-package gocql // import "github.com/gocql/gocql"
+package scql // import "github.com/gocql/gocql"

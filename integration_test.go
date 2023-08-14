@@ -1,7 +1,7 @@
 //go:build all || integration
 // +build all integration
 
-package gocql
+package scql
 
 // This file groups integration tests where Cassandra has to be set up with some special integration variables
 import (

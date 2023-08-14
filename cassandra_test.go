@@ -1,7 +1,7 @@
 //go:build all || cassandra
 // +build all cassandra
 
-package gocql
+package scql
 
 import (
 	"bytes"
@@ -707,7 +707,7 @@ func TestTooManyQueryArgs(t *testing.T) {
 		t.Fatal("create table:", err)
 	}
 
-	_, err := session.Query(`SELECT * FROM too_many_query_args WHERE id = ?`, 1, 2).Iter().SliceMap()
+	_, err := session.Query(`SELECT * FROM too_many_query_args WHERE id = ?`, 1, 2).Iter().GetRowsMap()
 
 	if err == nil {
 		t.Fatal("'`SELECT * FROM too_many_query_args WHERE id = ?`, 1, 2' should return an error")
@@ -739,7 +739,7 @@ func TestNotEnoughQueryArgs(t *testing.T) {
 		t.Fatal("create table:", err)
 	}
 
-	_, err := session.Query(`SELECT * FROM not_enough_query_args WHERE id = ? and cluster = ?`, 1).Iter().SliceMap()
+	_, err := session.Query(`SELECT * FROM not_enough_query_args WHERE id = ? and cluster = ?`, 1).Iter().GetRowsMap()
 
 	if err == nil {
 		t.Fatal("'`SELECT * FROM not_enough_query_args WHERE id = ? and cluster = ?`, 1' should return an error")
@@ -840,7 +840,7 @@ func TestMapScanWithRefMap(t *testing.T) {
 		// testint is not set here.
 	}
 	iter := session.Query(`SELECT * FROM scan_map_ref_table`).Iter()
-	if ok := iter.MapScan(ret); !ok {
+	if ok := iter.GetRowMap(ret); !ok {
 		t.Fatal("select:", iter.Close())
 	} else {
 		if ret["testtext"] != "testtext" {
@@ -861,7 +861,7 @@ func TestMapScanWithRefMap(t *testing.T) {
 		t.Fatal("returned testfullname did not match")
 	}
 
-	// using MapScan to read a nil int value
+	// using GetRowMap to read a nil int value
 	intp := new(int64)
 	ret = map[string]interface{}{
 		"testint": &intp,
@@ -902,7 +902,7 @@ func TestMapScan(t *testing.T) {
 
 	// First iteration
 	row := make(map[string]interface{})
-	if !iter.MapScan(row) {
+	if !iter.GetRowMap(row) {
 		t.Fatal("select:", iter.Close())
 	}
 	assertEqual(t, "fullname", "Ada Lovelace", row["fullname"])
@@ -911,7 +911,7 @@ func TestMapScan(t *testing.T) {
 
 	// Second iteration using a new map
 	row = make(map[string]interface{})
-	if !iter.MapScan(row) {
+	if !iter.GetRowMap(row) {
 		t.Fatal("select:", iter.Close())
 	}
 	assertEqual(t, "fullname", "Grace Hopper", row["fullname"])
@@ -968,26 +968,26 @@ func TestSliceMap(t *testing.T) {
 		m["testuuid"], m["testtimestamp"], m["testvarchar"], m["testbigint"], m["testblob"], m["testbool"], m["testfloat"], m["testdouble"], m["testint"], m["testdecimal"], m["testlist"], m["testset"], m["testmap"], m["testvarint"], m["testinet"]).Exec(); err != nil {
 		t.Fatal("insert:", err)
 	}
-	if returned, retErr := session.Query(`SELECT * FROM slice_map_table`).Iter().SliceMap(); retErr != nil {
+	if returned, retErr := session.Query(`SELECT * FROM slice_map_table`).Iter().GetRowsMap(); retErr != nil {
 		t.Fatal("select:", retErr)
 	} else {
 		matchSliceMap(t, sliceMap, returned[0])
 	}
 
-	// Test for Iter.MapScan()
+	// Test for Iter.GetRowMap()
 	{
 		testMap := make(map[string]interface{})
-		if !session.Query(`SELECT * FROM slice_map_table`).Iter().MapScan(testMap) {
-			t.Fatal("MapScan failed to work with one row")
+		if !session.Query(`SELECT * FROM slice_map_table`).Iter().GetRowMap(testMap) {
+			t.Fatal("GetRowMap failed to work with one row")
 		}
 		matchSliceMap(t, sliceMap, testMap)
 	}
 
-	// Test for Query.MapScan()
+	// Test for Query.GetRowMap()
 	{
 		testMap := make(map[string]interface{})
 		if session.Query(`SELECT * FROM slice_map_table`).MapScan(testMap) != nil {
-			t.Fatal("MapScan failed to work with one row")
+			t.Fatal("GetRowMap failed to work with one row")
 		}
 		matchSliceMap(t, sliceMap, testMap)
 	}
@@ -1062,7 +1062,7 @@ func TestSmallInt(t *testing.T) {
 		m["testsmallint"]).Exec(); err != nil {
 		t.Fatal("insert:", err)
 	}
-	if returned, retErr := session.Query(`SELECT * FROM smallint_table`).Iter().SliceMap(); retErr != nil {
+	if returned, retErr := session.Query(`SELECT * FROM smallint_table`).Iter().GetRowsMap(); retErr != nil {
 		t.Fatal("select:", retErr)
 	} else {
 		if sliceMap[0]["testsmallint"] != returned[0]["testsmallint"] {

@@ -1,4 +1,4 @@
-package gocql
+package scql
 
 import (
 	"context"

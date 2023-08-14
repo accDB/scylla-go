@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package gocql
+package scql
 
 //This file will be the future home for more policies
 

@@ -1,6 +1,6 @@
 //go:build gocql_debug
 // +build gocql_debug
 
-package gocql
+package scql
 
 const gocqlDebug = true

@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package gocql
+package scql
 
 import (
 	"bytes"
@@ -770,12 +770,12 @@ func (s *Session) MapExecuteBatchCAS(batch *Batch, dest map[string]interface{}) 
 		iter.Close()
 		return false, nil, err
 	}
-	iter.MapScan(dest)
+	iter.GetRowMap(dest)
 	applied = dest["[applied]"].(bool)
 	delete(dest, "[applied]")
 
 	// we usually close here, but instead of closing, just returin an error
-	// if MapScan failed. Although Close just returns err, using Close
+	// if GetRowMap failed. Although Close just returns err, using Close
 	// here might be confusing as we are not actually closing the iter
 	return applied, iter, iter.err
 }
@@ -1306,7 +1306,7 @@ func (q *Query) MapScan(m map[string]interface{}) error {
 	if err := iter.checkErrAndNotFound(); err != nil {
 		return err
 	}
-	iter.MapScan(m)
+	iter.GetRowMap(m)
 	return iter.Close()
 }
 
@@ -1359,7 +1359,7 @@ func (q *Query) MapScanCAS(dest map[string]interface{}) (applied bool, err error
 	if err := iter.checkErrAndNotFound(); err != nil {
 		return false, err
 	}
-	iter.MapScan(dest)
+	iter.GetRowMap(dest)
 	applied = dest["[applied]"].(bool)
 	delete(dest, "[applied]")
 

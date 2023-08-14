@@ -1,7 +1,7 @@
 //go:build all || unit
 // +build all unit
 
-package gocql
+package scql
 
 import (
 	"crypto/tls"

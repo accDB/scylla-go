@@ -2,7 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
-package gocql
+package scql
 
 import (
 	"fmt"
@@ -15,9 +15,17 @@ import (
 	"gopkg.in/inf.v0"
 )
 
+type RowValues []interface{}
+type RowsValues []*RowValues
+
+type RowsData struct {
+	Columns []string
+	Values  RowsValues
+}
+
 type RowData struct {
 	Columns []string
-	Values  []interface{}
+	Values  RowValues
 }
 
 func goType(t TypeInfo) (reflect.Type, error) {
@@ -45,7 +53,7 @@ func goType(t TypeInfo) (reflect.Type, error) {
 	case TypeTinyInt:
 		return reflect.TypeOf(*new(int8)), nil
 	case TypeDecimal:
-		return reflect.TypeOf(*new(inf.Dec)), nil
+		return reflect.TypeOf(*new(*inf.Dec)), nil
 	case TypeUUID, TypeTimeUUID:
 		return reflect.TypeOf(*new(UUID)), nil
 	case TypeList, TypeSet:
@@ -65,7 +73,7 @@ func goType(t TypeInfo) (reflect.Type, error) {
 		}
 		return reflect.MapOf(keyType, valueType), nil
 	case TypeVarint:
-		return reflect.TypeOf(*new(big.Int)), nil
+		return reflect.TypeOf(*new(*big.Int)), nil
 	case TypeTuple:
 		// what can we do here? all there is to do is to make a list of interface{}
 		tuple := t.(TupleTypeInfo)
@@ -297,7 +305,7 @@ func (r *RowData) rowMap(m map[string]interface{}) {
 
 // TupeColumnName will return the column name of a tuple value in a column named
 // c at index n. It should be used if a specific element within a tuple is needed
-// to be extracted from a map returned from SliceMap or MapScan.
+// to be extracted from a map returned from GetRowsMap or GetRowMap.
 func TupleColumnName(c string, n int) string {
 	return fmt.Sprintf("%s[%d]", c, n)
 }
@@ -307,27 +315,9 @@ func (iter *Iter) RowData() (RowData, error) {
 		return RowData{}, iter.err
 	}
 
-	columns := make([]string, 0, len(iter.Columns()))
-	values := make([]interface{}, 0, len(iter.Columns()))
-
-	for _, column := range iter.Columns() {
-		if c, ok := column.TypeInfo.(TupleTypeInfo); !ok {
-			val, err := column.TypeInfo.NewWithError()
-			if err != nil {
-				return RowData{}, err
-			}
-			columns = append(columns, column.Name)
-			values = append(values, val)
-		} else {
-			for i, elem := range c.Elems {
-				columns = append(columns, TupleColumnName(column.Name, i))
-				val, err := elem.NewWithError()
-				if err != nil {
-					return RowData{}, err
-				}
-				values = append(values, val)
-			}
-		}
+	columns, values, err := iter.initColumnsAndValues()
+	if err != nil {
+		return RowData{}, iter.err
 	}
 
 	rowData := RowData{
@@ -336,6 +326,65 @@ func (iter *Iter) RowData() (RowData, error) {
 	}
 
 	return rowData, nil
+}
+
+func (iter *Iter) GetRowsArray() (RowsData, error) {
+	columns, values, err := iter.initColumnsAndValues()
+	if err != nil {
+		return RowsData{}, iter.err
+	}
+	out := RowsData{
+		Columns: columns,
+		Values:  make(RowsValues, 0),
+	}
+	for iter.Scan(values...) {
+		out.Values = append(out.Values, &values)
+	}
+	return out, nil
+}
+
+func (iter *Iter) initRowsData() (RowsData, error) {
+	if iter.err != nil {
+		return RowsData{}, iter.err
+	}
+	columns, initRowValues, err := iter.initColumnsAndValues()
+	if err != nil {
+		return RowsData{}, iter.err
+	}
+
+	rowsData := RowsData{
+		Columns: columns,
+		Values:  RowsValues{&initRowValues},
+	}
+
+	return rowsData, nil
+}
+
+func (iter *Iter) initColumnsAndValues() ([]string, RowValues, error) {
+	var err error
+	columns := make([]string, 0, len(iter.Columns()))
+	values := make(RowValues, 0, len(iter.Columns()))
+	for _, column := range iter.Columns() {
+		var val interface{}
+		if c, ok := column.TypeInfo.(TupleTypeInfo); !ok {
+			val, err = column.TypeInfo.NewWithError()
+			if err != nil {
+				return nil, nil, err
+			}
+			columns = append(columns, column.Name)
+			values = append(values, val)
+		} else {
+			for i, elem := range c.Elems {
+				columns = append(columns, TupleColumnName(column.Name, i))
+				val, err = elem.NewWithError()
+				if err != nil {
+					return nil, nil, err
+				}
+				values = append(values, val)
+			}
+		}
+	}
+	return columns, values, nil
 }
 
 // TODO(zariel): is it worth exporting this?
@@ -351,9 +400,9 @@ func (iter *Iter) rowMap() (map[string]interface{}, error) {
 	return m, nil
 }
 
-// SliceMap is a helper function to make the API easier to use
+// GetRowsMap is a helper function to make the API easier to use
 // returns the data from the query in the form of []map[string]interface{}
-func (iter *Iter) SliceMap() ([]map[string]interface{}, error) {
+func (iter *Iter) GetRowsMap() ([]map[string]interface{}, error) {
 	if iter.err != nil {
 		return nil, iter.err
 	}
@@ -372,18 +421,18 @@ func (iter *Iter) SliceMap() ([]map[string]interface{}, error) {
 	return dataToReturn, nil
 }
 
-// MapScan takes a map[string]interface{} and populates it with a row
+// GetRowMap takes a map[string]interface{} and populates it with a row
 // that is returned from cassandra.
 //
-// Each call to MapScan() must be called with a new map object.
-// During the call to MapScan() any pointers in the existing map
+// Each call to GetRowMap() must be called with a new map object.
+// During the call to GetRowMap() any pointers in the existing map
 // are replaced with non pointer types before the call returns
 //
 //	iter := session.Query(`SELECT * FROM mytable`).Iter()
 //	for {
 //		// New map each iteration
 //		row := make(map[string]interface{})
-//		if !iter.MapScan(row) {
+//		if !iter.GetRowMap(row) {
 //			break
 //		}
 //		// Do things with row
@@ -405,12 +454,12 @@ func (iter *Iter) SliceMap() ([]map[string]interface{}, error) {
 //			"age":      &age,
 //			"address":  &address,
 //		}
-//		if !iter.MapScan(row) {
+//		if !iter.GetRowMap(row) {
 //			break
 //		}
 //		fmt.Printf("First: %s Age: %d Address: %q\n", fullName.FirstName, age, address)
 //	}
-func (iter *Iter) MapScan(m map[string]interface{}) bool {
+func (iter *Iter) GetRowMap(m map[string]interface{}) bool {
 	if iter.err != nil {
 		return false
 	}

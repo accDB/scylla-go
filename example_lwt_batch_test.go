@@ -1,4 +1,4 @@
-package gocql_test
+package scql_test
 
 import (
 	"context"
@@ -54,7 +54,7 @@ func ExampleSession_MapExecuteBatchCAS() {
 		fmt.Println(applied, m)
 
 		m = make(map[string]interface{})
-		for iter.MapScan(m) {
+		for iter.GetRowMap(m) {
 			fmt.Println(m)
 			m = make(map[string]interface{})
 		}

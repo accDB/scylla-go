@@ -1,4 +1,4 @@
-package gocql
+package scql
 
 import (
 	"context"
@@ -402,10 +402,10 @@ func (h *HostInfo) HostnameAndPort() string {
 }
 
 func (h *HostInfo) ConnectAddressAndPort() string {
-        h.mu.Lock()
-        defer h.mu.Unlock()
-        addr, _ := h.connectAddressLocked()
-        return net.JoinHostPort(addr.String(), strconv.Itoa(h.port))
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	addr, _ := h.connectAddressLocked()
+	return net.JoinHostPort(addr.String(), strconv.Itoa(h.port))
 }
 
 func (h *HostInfo) String() string {
@@ -567,7 +567,7 @@ func (s *Session) hostInfoFromMap(row map[string]interface{}, host *HostInfo) (*
 }
 
 func (s *Session) hostInfoFromIter(iter *Iter, connectAddress net.IP, defaultPort int) (*HostInfo, error) {
-	rows, err := iter.SliceMap()
+	rows, err := iter.GetRowsMap()
 	if err != nil {
 		// TODO(zariel): make typed error
 		return nil, err
@@ -620,7 +620,7 @@ func (r *ringDescriber) getClusterPeerInfo(localHost *HostInfo) ([]*HostInfo, er
 		return nil, errNoControl
 	}
 
-	rows, err := iter.SliceMap()
+	rows, err := iter.GetRowsMap()
 	if err != nil {
 		// TODO(zariel): make typed error
 		return nil, fmt.Errorf("unable to fetch peer host info: %s", err)

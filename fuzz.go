@@ -1,7 +1,7 @@
 //go:build gofuzz
 // +build gofuzz
 
-package gocql
+package scql
 
 import "bytes"
 
